@@ -18,16 +18,23 @@ app = FastAPI(lifespan=lifespan)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @app.post("/register/")
-def register(username: str, password: str):
+def register(username: str, password: str, token: str = Depends(oauth2_scheme)):
     """
     Registers a new user
 
     Returns:
         String: Message whether the new user was added succesfully
     """
-    if db.find_user(username):
-        raise HTTPException(status_code=400, detail="Username already taken")
-    return db.add_user(username, password)
+    try:
+        payload = decode(token)
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        if db.find_user(username):
+            raise HTTPException(status_code=400, detail="Username already taken")
+        return db.add_user(username, password)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends()) -> Token:

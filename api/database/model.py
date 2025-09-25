@@ -33,6 +33,10 @@ class DB():
         """
         SQLModel.metadata.create_all(self.engine)
 
+        # Add base admin user (TODO: create from environmental variable)
+        if not self.find_user("dman3329"):
+            self.add_user("dman3329", "password")
+
     def add_user(self, username, password):
         """
         Adds a user to the database
